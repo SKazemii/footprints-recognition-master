@@ -1,3 +1,9 @@
+# filter warnings
+import warnings
+
+warnings.filterwarnings("ignore", category=FutureWarning)
+
+
 # organize imports
 from __future__ import print_function
 
@@ -13,76 +19,60 @@ import pickle
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-# load the user configs
-with open('conf/conf.json') as f:    
-	config = json.load(f)
+# importing setting
+import confiVariables as cfg
 
-# config variables
-test_size 		= config["test_size"]
-seed 			= config["seed"]
-features_path 	= config["features_path"]
-labels_path 	= config["labels_path"]
-results 		= config["results"]
-classifier_path = config["classifier_path"]
-train_path 		= config["train_path"]
-num_classes 	= config["num_classes"]
-classifier_path = config["classifier_path"]
 
 # import features and labels
-h5f_data  = h5py.File(features_path, 'r')
-h5f_label = h5py.File(labels_path, 'r')
+with open(cfg.features_path, "rb") as handle:
+    features = pickle.load(handle)
 
-features_string = h5f_data['dataset_1']
-labels_string   = h5f_label['dataset_1']
+with open(cfg.labels_path, "rb") as handle:
+    labels = pickle.load(handle)
 
-features = np.array(features_string)
-labels   = np.array(labels_string)
-
-h5f_data.close()
-h5f_label.close()
 
 # verify the shape of features and labels
-print ("[INFO] features shape: {}".format(features.shape))
-print ("[INFO] labels shape: {}".format(labels.shape))
+print("[INFO] features shape: {}".format(features.shape))
+print("[INFO] labels shape: {}".format(labels.shape))
 
-print ("[INFO] training started...")
+print("[INFO] training started...")
 # split the training and testing data
-(trainData, testData, trainLabels, testLabels) = train_test_split(np.array(features),
-                                                                  np.array(labels),
-                                                                  test_size=test_size,
-                                                                  random_state=seed)
+(trainData, testData, trainLabels, testLabels) = train_test_split(
+    np.array(features), np.array(labels), test_size=cfg.test_size, random_state=cfg.seed
+)
 
-print ("[INFO] splitted train and test data...")
-print ("[INFO] train data  : {}".format(trainData.shape))
-print ("[INFO] test data   : {}".format(testData.shape))
-print ("[INFO] train labels: {}".format(trainLabels.shape))
-print ("[INFO] test labels : {}".format(testLabels.shape))
+
+print("[INFO] splitted train and test data...")
+print("[INFO] train data  : {}".format(trainData.shape))
+print("[INFO] test data   : {}".format(testData.shape))
+print("[INFO] train labels: {}".format(trainLabels.shape))
+print("[INFO] test labels : {}".format(testLabels.shape))
 
 # use logistic regression as the model
-print ("[INFO] creating model...")
-model = LogisticRegression(random_state=seed)
+print("[INFO] creating model...")
+model = LogisticRegression(random_state=cfg.seed)
 model.fit(trainData, trainLabels)
 
 # use rank-1 and rank-5 predictions
-print ("[INFO] evaluating model...")
-f = open(results, "w")
+print("[INFO] evaluating model...")
+f = open(cfg.results, "w")
 rank_1 = 0
 rank_5 = 0
 
 # loop over test data
 for (label, features) in zip(testLabels, testData):
-	# predict the probability of each class label and
-	# take the top-5 class labels
-	predictions = model.predict_proba(np.atleast_2d(features))[0]
-	predictions = np.argsort(predictions)[::-1][:5]
+    # predict the probability of each class label and
+    # take the top-5 class labels
+    predictions = model.predict_proba(np.atleast_2d(features))[0]
+    predictions = np.argsort(predictions)[::-1][:5]
 
-	# rank-1 prediction increment
-	if label == predictions[0]:
-		rank_1 += 1
+    # rank-1 prediction increment
+    if label == predictions[0]:
+        rank_1 += 1
 
-	# rank-5 prediction increment
-	if label in predictions:
-		rank_5 += 1
+    # rank-5 prediction increment
+    if label in predictions:
+        rank_5 += 1
 
 # convert accuracies to percentages
 rank_1 = (rank_1 / float(len(testLabels))) * 100
@@ -100,18 +90,16 @@ f.write("{}\n".format(classification_report(testLabels, preds)))
 f.close()
 
 # dump classifier to file
-print ("[INFO] saving model...")
-pickle.dump(model, open(classifier_path, 'wb'))
+print("[INFO] saving model...")
+pickle.dump(model, open(cfg.classifier_path, "wb"))
 
 # display the confusion matrix
-print ("[INFO] confusion matrix")
+print("[INFO] confusion matrix")
 
 # get the list of training lables
-labels = sorted(list(os.listdir(train_path)))
+labels = sorted(list(os.listdir(cfg.train_path)))
 
 # plot the confusion matrix
 cm = confusion_matrix(testLabels, preds)
-sns.heatmap(cm,
-            annot=True,
-            cmap="Set2")
+sns.heatmap(cm, annot=True, cmap="Set2")
 plt.show()

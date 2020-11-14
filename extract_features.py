@@ -140,11 +140,6 @@ with open(cfg.labels_path, "wb") as handle:
     pickle.dump(np.array(le_labels), handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-## loading files
-# with open('filename.pickle', 'rb') as handle:
-#    b = pickle.load(handle)
-
-
 # save model and weights
 model_json = model.to_json()
 with open(cfg.model_path + str(cfg.test_size * 100)[0:2] + ".json", "w") as json_file:
