@@ -33,79 +33,57 @@ import pickle
 # Answer might be found at: https://github.com/dmlc/xgboost/issues/1715
 os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
 
-
-# config variables
-# model_name = {inceptionv3 | resnet50 | vgg16 | vgg19 | xception | inceptionresnetv2 | mobilenet}
-model_name = "vgg19"
-# weights = {none | imagenet}
-weights = "imagenet"
-# include_top = {True | False}
-include_top = False
-# test_size = 0.1 ~ 0.9
-test_size = 0.10
-
-
-# creating output paths
-project_path = os.getcwd()
-
-os.chdir(project_path)
-os.system("mkdir output")
-
-train_path = project_path + "/results"
-
-os.chdir(project_path + "/output/")
-os.system("mkdir " + model_name)
-os.chdir(project_path)
-
-features_path = project_path + "/output/" + model_name + "/features.pickle"
-labels_path = project_path + "/output/" + model_name + "/labels.pickle"
-results = project_path + "/output/" + model_name + "/results.txt"
-model_path = project_path + "/output/" + model_name + "/model"
+# importing setting
+import confiVariables as cfg
 
 
 # create the pretrained models
 # check for pretrained weight usage or not    output=base_model.get_layer("fc1").output
 # check for top layers to be included or not  outputs=modelvvg16.layers[-2].output
-if model_name == "vgg16":
-    base_model = VGG16(weights=weights)
+if cfg.model_name == "vgg16":
+    base_model = VGG16(weights=cfg.weights)
     model = Model(input=base_model.input, output=base_model.get_layer("fc1").output)
     image_size = (224, 224)
-elif model_name == "vgg19":
-    base_model = VGG19(weights=weights)
+elif cfg.model_name == "test":
+    base_model = VGG16(weights=cfg.weights)
+    model = Model(input=base_model.input, output=base_model.get_layer("fc1").output)
+    image_size = (224, 224)
+elif cfg.model_name == "vgg19":
+    base_model = VGG19(weights=cfg.weights)
     base_model.summary()
     model = Model(input=base_model.input, output=base_model.get_layer("fc1").output)
     image_size = (224, 224)
-elif model_name == "resnet50":
-    model = ResNet50(weights=weights)
+elif cfg.model_name == "resnet50":
+    model = ResNet50(weights=cfg.weights)
     image_size = (224, 224)
-elif model_name == "inceptionv3":
+elif cfg.model_name == "inceptionv3":
     base_model = InceptionV3(
-        include_top=include_top,
-        weights=weights,
+        include_top=cfg.include_top,
+        weights=cfg.weights,
         input_tensor=Input(shape=(299, 299, 3)),
     )
     model = Model(input=base_model.input, output=base_model.get_layer("custom").output)
     image_size = (299, 299)
-elif model_name == "inceptionresnetv2":
+elif cfg.model_name == "inceptionresnetv2":
     base_model = InceptionResNetV2(
-        include_top=include_top,
-        weights=weights,
+        include_top=cfg.include_top,
+        weights=cfg.weights,
         input_tensor=Input(shape=(299, 299, 3)),
     )
     model = Model(input=base_model.input, output=base_model.get_layer("custom").output)
     image_size = (299, 299)
-elif model_name == "mobilenet":
+elif cfg.model_name == "mobilenet":
     base_model = MobileNet(
-        include_top=include_top,
-        weights=weights,
+        include_top=cfg.include_top,
+        weights=cfg.weights,
         input_tensor=Input(shape=(224, 224, 3)),
         input_shape=(224, 224, 3),
     )
     base_model.summary()
     model = Model(input=base_model.input, output=base_model.get_layer("custom").output)
     image_size = (224, 224)
-elif model_name == "xception":
-    base_model = Xception(weights=weights)
+elif cfg.model_name == "xception":
+    base_model = Xception(weights=cfg.weights)
     model = Model(
         input=base_model.input, output=base_model.get_layer("avg_pool").output
     )
@@ -116,7 +94,7 @@ else:
 print("[INFO] successfully loaded base model and model...")
 
 # path to training dataset
-train_labels = os.listdir(train_path)
+train_labels = os.listdir(cfg.train_path)
 
 # encode the labels
 print("[INFO] encoding labels...")
@@ -127,10 +105,14 @@ le.fit([tl for tl in train_labels])
 features = []
 labels = []
 
-# train_labels = ["13"]
+# just for test
+if cfg.model_name == "test":
+    train_labels = ["13"]
+
+
 # loop over all the labels in the folder
 for i, label in enumerate(train_labels):
-    cur_path = train_path + "/" + label
+    cur_path = cfg.train_path + "/" + label
     for image_path in glob.glob(cur_path + "/*.jpeg"):
         img = image.load_img(image_path, target_size=image_size)
         x = image.img_to_array(img)
@@ -151,10 +133,10 @@ print("[STATUS] extracted labels shape: {}".format(le_labels.shape))
 print("[STATUS] extracted features shape: {}".format(features[1].shape))
 
 # save features and labels
-with open(features_path, "wb") as handle:
+with open(cfg.features_path, "wb") as handle:
     pickle.dump(np.array(features), handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-with open(labels_path, "wb") as handle:
+with open(cfg.labels_path, "wb") as handle:
     pickle.dump(np.array(le_labels), handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
@@ -165,11 +147,11 @@ with open(labels_path, "wb") as handle:
 
 # save model and weights
 model_json = model.to_json()
-with open(model_path + str(test_size * 100)[0:2] + ".json", "w") as json_file:
+with open(cfg.model_path + str(cfg.test_size * 100)[0:2] + ".json", "w") as json_file:
     json_file.write(model_json)
 
 # save weights
-model.save_weights(model_path + str(test_size * 100)[0:2] + ".h5")
+model.save_weights(cfg.model_path + str(cfg.test_size * 100)[0:2] + ".h5")
 print("[STATUS] saved model and weights to disk..")
 print("[STATUS] features and labels saved..")
 
