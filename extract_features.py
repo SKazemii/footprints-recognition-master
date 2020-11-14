@@ -1,5 +1,6 @@
 # filter warnings
 import warnings
+
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
 # keras imports
@@ -25,121 +26,155 @@ import os
 import json
 import datetime
 import time
+import pickle
 
-# load the user configs
-with open('conf/conf.json') as f:    
-	config = json.load(f)
+# TODO: please cheak it
+# for error "Error #15: Initializing libiomp5.dylib, but found libiomp5.dylib already initialized."
+# Answer might be found at: https://github.com/dmlc/xgboost/issues/1715
+os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
+
 
 # config variables
-model_name 		= config["model"]
-weights 		= config["weights"]
-include_top 	= config["include_top"]
-train_path 		= config["train_path"]
-features_path 	= config["features_path"]
-labels_path 	= config["labels_path"]
-test_size 		= config["test_size"]
-results 		= config["results"]
-model_path 		= config["model_path"]
+# model_name = {inceptionv3 | resnet50 | vgg16 | vgg19 | xception | inceptionresnetv2 | mobilenet}
+model_name = "vgg19"
+# weights = {none | imagenet}
+weights = "imagenet"
+# include_top = {True | False}
+include_top = False
+# test_size = 0.1 ~ 0.9
+test_size = 0.10
 
-# start time
-print ("[STATUS] start time - {}".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M")))
-start = time.time()
+
+# creating output paths
+project_path = os.getcwd()
+
+os.chdir(project_path)
+os.system("mkdir output")
+
+train_path = project_path + "/results"
+
+os.chdir(project_path + "/output/")
+os.system("mkdir " + model_name)
+os.chdir(project_path)
+
+features_path = project_path + "/output/" + model_name + "/features.pickle"
+labels_path = project_path + "/output/" + model_name + "/labels.pickle"
+results = project_path + "/output/" + model_name + "/results.txt"
+model_path = project_path + "/output/" + model_name + "/model"
+
 
 # create the pretrained models
-# check for pretrained weight usage or not
-# check for top layers to be included or not
+# check for pretrained weight usage or not    output=base_model.get_layer("fc1").output
+# check for top layers to be included or not  outputs=modelvvg16.layers[-2].output
 if model_name == "vgg16":
-	base_model = VGG16(weights=weights)
-	model = Model(input=base_model.input, output=base_model.get_layer('fc1').output)
-	image_size = (224, 224)
+    base_model = VGG16(weights=weights)
+    model = Model(input=base_model.input, output=base_model.get_layer("fc1").output)
+    image_size = (224, 224)
 elif model_name == "vgg19":
-	base_model = VGG19(weights=weights)
-	model = Model(input=base_model.input, output=base_model.get_layer('fc1').output)
-	image_size = (224, 224)
+    base_model = VGG19(weights=weights)
+    base_model.summary()
+    model = Model(input=base_model.input, output=base_model.get_layer("fc1").output)
+    image_size = (224, 224)
 elif model_name == "resnet50":
-	base_model = ResNet50(weights=weights)
-	model = Model(input=base_model.input, output=base_model.get_layer('flatten').output)
-	image_size = (224, 224)
+    model = ResNet50(weights=weights)
+    image_size = (224, 224)
 elif model_name == "inceptionv3":
-	base_model = InceptionV3(include_top=include_top, weights=weights, input_tensor=Input(shape=(299,299,3)))
-	model = Model(input=base_model.input, output=base_model.get_layer('custom').output)
-	image_size = (299, 299)
+    base_model = InceptionV3(
+        include_top=include_top,
+        weights=weights,
+        input_tensor=Input(shape=(299, 299, 3)),
+    )
+    model = Model(input=base_model.input, output=base_model.get_layer("custom").output)
+    image_size = (299, 299)
 elif model_name == "inceptionresnetv2":
-	base_model = InceptionResNetV2(include_top=include_top, weights=weights, input_tensor=Input(shape=(299,299,3)))
-	model = Model(input=base_model.input, output=base_model.get_layer('custom').output)
-	image_size = (299, 299)
+    base_model = InceptionResNetV2(
+        include_top=include_top,
+        weights=weights,
+        input_tensor=Input(shape=(299, 299, 3)),
+    )
+    model = Model(input=base_model.input, output=base_model.get_layer("custom").output)
+    image_size = (299, 299)
 elif model_name == "mobilenet":
-	base_model = MobileNet(include_top=include_top, weights=weights, input_tensor=Input(shape=(224,224,3)), input_shape=(224,224,3))
-	model = Model(input=base_model.input, output=base_model.get_layer('custom').output)
-	image_size = (224, 224)
+    base_model = MobileNet(
+        include_top=include_top,
+        weights=weights,
+        input_tensor=Input(shape=(224, 224, 3)),
+        input_shape=(224, 224, 3),
+    )
+    base_model.summary()
+    model = Model(input=base_model.input, output=base_model.get_layer("custom").output)
+    image_size = (224, 224)
 elif model_name == "xception":
-	base_model = Xception(weights=weights)
-	model = Model(input=base_model.input, output=base_model.get_layer('avg_pool').output)
-	image_size = (299, 299)
+    base_model = Xception(weights=weights)
+    model = Model(
+        input=base_model.input, output=base_model.get_layer("avg_pool").output
+    )
+    image_size = (299, 299)
 else:
-	base_model = None
+    base_model = None
 
-print ("[INFO] successfully loaded base model and model...")
+print("[INFO] successfully loaded base model and model...")
 
 # path to training dataset
 train_labels = os.listdir(train_path)
 
 # encode the labels
-print ("[INFO] encoding labels...")
+print("[INFO] encoding labels...")
 le = LabelEncoder()
 le.fit([tl for tl in train_labels])
 
 # variables to hold features and labels
 features = []
-labels   = []
+labels = []
 
+# train_labels = ["13"]
 # loop over all the labels in the folder
-count = 1
 for i, label in enumerate(train_labels):
-	cur_path = train_path + "/" + label
-	count = 1
-	for image_path in glob.glob(cur_path + "/*.jpg"):
-		img = image.load_img(image_path, target_size=image_size)
-		x = image.img_to_array(img)
-		x = np.expand_dims(x, axis=0)
-		x = preprocess_input(x)
-		feature = model.predict(x)
-		flat = feature.flatten()
-		features.append(flat)
-		labels.append(label)
-		print ("[INFO] processed - " + str(count))
-		count += 1
-	print ("[INFO] completed label - " + label)
+    cur_path = train_path + "/" + label
+    for image_path in glob.glob(cur_path + "/*.jpeg"):
+        img = image.load_img(image_path, target_size=image_size)
+        x = image.img_to_array(img)
+        x = np.expand_dims(x, axis=0)
+        x = preprocess_input(x)
+        feature = model.predict(x)
+        flat = feature.flatten()
+        features.append(flat)
+        labels.append(label)
+    print("[INFO] completed label - " + label)
 
 # encode the labels using LabelEncoder
 le = LabelEncoder()
 le_labels = le.fit_transform(labels)
 
 # get the shape of training labels
-print ("[STATUS] training labels: {}".format(le_labels))
-print ("[STATUS] training labels shape: {}".format(le_labels.shape))
+print("[STATUS] extracted labels shape: {}".format(le_labels.shape))
+print("[STATUS] extracted features shape: {}".format(features[1].shape))
 
 # save features and labels
-h5f_data = h5py.File(features_path, 'w')
-h5f_data.create_dataset('dataset_1', data=np.array(features))
+with open(features_path, "wb") as handle:
+    pickle.dump(np.array(features), handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-h5f_label = h5py.File(labels_path, 'w')
-h5f_label.create_dataset('dataset_1', data=np.array(le_labels))
+with open(labels_path, "wb") as handle:
+    pickle.dump(np.array(le_labels), handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-h5f_data.close()
-h5f_label.close()
+
+## loading files
+# with open('filename.pickle', 'rb') as handle:
+#    b = pickle.load(handle)
+
 
 # save model and weights
 model_json = model.to_json()
-with open(model_path + str(test_size) + ".json", "w") as json_file:
-	json_file.write(model_json)
+with open(model_path + str(test_size * 100)[0:2] + ".json", "w") as json_file:
+    json_file.write(model_json)
 
 # save weights
-model.save_weights(model_path + str(test_size) + ".h5")
+model.save_weights(model_path + str(test_size * 100)[0:2] + ".h5")
 print("[STATUS] saved model and weights to disk..")
-
-print ("[STATUS] features and labels saved..")
+print("[STATUS] features and labels saved..")
 
 # end time
 end = time.time()
-print ("[STATUS] end time - {}".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M")))
+print(
+    "[STATUS] end time - {}".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M"))
+)
