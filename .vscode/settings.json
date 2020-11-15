@@ -9,7 +9,7 @@
     "terminal.integrated.fontSize": 14,
     "terminal.integrated.fontWeight": "500",
     "window.zoomLevel": 2,
-    "python.pythonPath": "/Users/saeedkazemi/opt/anaconda3/envs/MyEnv/bin/python",
+    "python.pythonPath": "/Users/saeedkazemi/opt/anaconda3/envs/ML/bin/python",
     "python.formatting.provider": "black",
     "editor.formatOnSave": true,
     "python.linting.enabled": true,

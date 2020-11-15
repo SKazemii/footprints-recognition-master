@@ -14,7 +14,7 @@ from keras.applications.inception_v3 import InceptionV3, preprocess_input
 from keras.preprocessing import image
 from keras.models import Model
 from keras.models import model_from_json
-from keras.layers import Input
+from keras.layers import Input, Dense, GlobalAveragePooling2D
 
 # other imports
 from sklearn.preprocessing import LabelEncoder
@@ -62,7 +62,12 @@ elif cfg.model_name == "inceptionv3":
         weights=cfg.weights,
         input_tensor=Input(shape=(299, 299, 3)),
     )
-    model = Model(input=base_model.input, output=base_model.get_layer("custom").output)
+    # base_model.summary()
+    # add a global spatial average pooling layer
+    x = base_model.output
+    predictions = GlobalAveragePooling2D()(x)
+
+    model = Model(input=base_model.input, outputs=predictions)
     image_size = (299, 299)
 elif cfg.model_name == "inceptionresnetv2":
     base_model = InceptionResNetV2(
@@ -70,7 +75,9 @@ elif cfg.model_name == "inceptionresnetv2":
         weights=cfg.weights,
         input_tensor=Input(shape=(299, 299, 3)),
     )
-    model = Model(input=base_model.input, output=base_model.get_layer("custom").output)
+    x = base_model.output
+    predictions = GlobalAveragePooling2D()(x)
+    model = Model(input=base_model.input, output=predictions)
     image_size = (299, 299)
 elif cfg.model_name == "mobilenet":
     base_model = MobileNet(
@@ -79,14 +86,17 @@ elif cfg.model_name == "mobilenet":
         input_tensor=Input(shape=(224, 224, 3)),
         input_shape=(224, 224, 3),
     )
-    base_model.summary()
-    model = Model(input=base_model.input, output=base_model.get_layer("custom").output)
+    x = base_model.output
+    predictions = GlobalAveragePooling2D()(x)
+    model = Model(input=base_model.input, output=predictions)
     image_size = (224, 224)
+
 elif cfg.model_name == "xception":
     base_model = Xception(weights=cfg.weights)
     model = Model(
         input=base_model.input, output=base_model.get_layer("avg_pool").output
     )
+    model.summary()
     image_size = (299, 299)
 else:
     base_model = None
