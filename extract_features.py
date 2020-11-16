@@ -54,7 +54,18 @@ elif cfg.model_name == "vgg19":
     model = Model(input=base_model.input, output=base_model.get_layer("fc1").output)
     image_size = (224, 224)
 elif cfg.model_name == "resnet50":
-    model = ResNet50(weights=cfg.weights)
+    base_model = ResNet50(
+        input_tensor=Input(shape=(224, 224, 3)),
+        include_top=cfg.include_top,
+        weights=cfg.weights,
+    )
+    base_model.summary()
+    x = base_model.output
+    predictions = GlobalAveragePooling2D()(x)
+
+    model = Model(input=base_model.input, outputs=predictions)
+    model.summary()
+
     image_size = (224, 224)
 elif cfg.model_name == "inceptionv3":
     base_model = InceptionV3(
