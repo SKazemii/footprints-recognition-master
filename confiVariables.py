@@ -3,7 +3,7 @@ import os
 # config variables
 # model_name = {   mobilenet}
 # already done = mobilenet | inceptionresnetv2 | xception | inceptionv3 | resnet50 | vgg16 | vgg19
-model_name = "resnet50"
+model_name = "vgg19"
 # weights = {none | imagenet}
 weights = "imagenet"
 # include_top = {True | False}
