@@ -3,7 +3,7 @@ import os
 # config variables
 # model_name = {   mobilenet}
 # already done = mobilenet | inceptionresnetv2 | xception | inceptionv3 | resnet50 | vgg16 | vgg19
-model_name = "vgg19"
+model_name = "mobilenet"
 # weights = {none | imagenet}
 weights = "imagenet"
 # include_top = {True | False}
@@ -27,5 +27,7 @@ os.chdir(project_path)
 features_path = project_path + "/output/" + model_name + "/features.pickle"
 labels_path = project_path + "/output/" + model_name + "/labels.pickle"
 results = project_path + "/output/" + model_name + "/results.txt"
+svmresults = project_path + "/output/" + model_name + "/svmresults.txt"
+
 model_path = project_path + "/output/" + model_name + "/model"
 classifier_path = project_path + "/output/" + model_name + "/classifier.pickle"

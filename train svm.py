@@ -8,7 +8,7 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression
+from sklearn import svm
 from sklearn.metrics import confusion_matrix
 import numpy as np
 import os
@@ -47,13 +47,14 @@ print("[INFO] test labels : {}".format(testLabels.shape))
 
 # use logistic regression as the model
 print("[INFO] creating model...")
-model = LogisticRegression(random_state=cfg.seed)
+
+model = svm.SVC(kernel="rbf", decision_function_shape="ovr", probability=True)
 model.fit(trainData, trainLabels)
 
 
 # use rank-1 and rank-5 predictions
 print("[INFO] evaluating model...")
-f = open(cfg.results, "w")
+f = open(cfg.svmresults, "w")
 rank_1 = 0
 rank_2 = 0
 rank_5 = 0
