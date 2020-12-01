@@ -28,6 +28,7 @@ features_path = project_path + "/output/" + model_name + "/features.pickle"
 labels_path = project_path + "/output/" + model_name + "/labels.pickle"
 results = project_path + "/output/" + model_name + "/results.txt"
 svmresults = project_path + "/output/" + model_name + "/svmresults.txt"
+knnresults = project_path + "/output/" + model_name + "/knnresults.txt"
 
 model_path = project_path + "/output/" + model_name + "/model"
 classifier_path = project_path + "/output/" + model_name + "/classifier.pickle"
