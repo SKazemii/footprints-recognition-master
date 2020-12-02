@@ -47,6 +47,7 @@ print("[INFO] test labels : {}".format(testLabels.shape))
 
 # use logistic regression as the model
 print("[INFO] creating model...")
+rank_1_max = 0
 for n_neighbor in range(1, 25):
 
     model = KNeighborsClassifier(n_neighbors=n_neighbor)
@@ -81,11 +82,17 @@ for n_neighbor in range(1, 25):
     rank_1 = (rank_1 / float(len(testLabels))) * 100
     rank_2 = (rank_2 / float(len(testLabels))) * 100
     rank_5 = (rank_5 / float(len(testLabels))) * 100
+    if rank_1 > rank_1_max:
+        rank_1_max = rank_1
+        best_n_neighbor = n_neighbor
 
     print("n_neighbor = {}   acc ={}".format(n_neighbor, rank_1))
 
 
-model = KNeighborsClassifier(n_neighbors=6)
+print("=========================================================")
+print("best n_neighbor = {},   acc_max = {}".format(best_n_neighbor, rank_1_max))
+
+model = KNeighborsClassifier(n_neighbors=best_n_neighbor)
 model.fit(trainData, trainLabels)
 
 # use rank-1 and rank-5 predictions
@@ -119,7 +126,6 @@ rank_1 = (rank_1 / float(len(testLabels))) * 100
 rank_2 = (rank_2 / float(len(testLabels))) * 100
 rank_5 = (rank_5 / float(len(testLabels))) * 100
 
-print("n_neighbor = {}   acc ={}".format(n_neighbor, rank_1))
 # write the accuracies to file
 f.write("Rank-1: {:.2f}%\n".format(rank_1))
 f.write("Rank-2: {:.2f}%\n".format(rank_2))
@@ -142,6 +148,6 @@ print("[INFO] confusion matrix")
 labels = sorted(list(os.listdir(cfg.train_path)))
 
 # plot the confusion matrix
-# cm = confusion_matrix(testLabels, preds)
-# sns.heatmap(cm, annot=True, cmap="Set2")
-# plt.show()
+cm = confusion_matrix(testLabels, preds)
+sns.heatmap(cm, annot=True, cmap="Set2")
+plt.show()
