@@ -8,7 +8,7 @@ warnings.filterwarnings("ignore")
 
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.metrics import confusion_matrix
 import numpy as np
 import os
@@ -47,50 +47,13 @@ print("[INFO] test labels : {}".format(testLabels.shape))
 
 # use logistic regression as the model
 print("[INFO] creating model...")
-for n_neighbor in range(1, 25):
-
-    model = KNeighborsClassifier(n_neighbors=n_neighbor)
-    model.fit(trainData, trainLabels)
-
-    # use rank-1 and rank-5 predictions
-    # print("[INFO] evaluating model...")
-    rank_1 = 0
-    rank_2 = 0
-    rank_5 = 0
-
-    # loop over test data
-    for (label, features) in zip(testLabels, testData):
-        # predict the probability of each class label and
-        # take the top-5 class labels
-        predictions = model.predict_proba(np.atleast_2d(features))[0]
-        predictions = np.argsort(predictions)[::-1][:5]
-
-        # rank-1 prediction increment
-        if label == predictions[0]:
-            rank_1 += 1
-
-        # rank-2 prediction increment
-        if label in predictions[:2]:
-            rank_2 += 1
-
-        # rank-5 prediction increment
-        if label in predictions:
-            rank_5 += 1
-
-    # convert accuracies to percentages
-    rank_1 = (rank_1 / float(len(testLabels))) * 100
-    rank_2 = (rank_2 / float(len(testLabels))) * 100
-    rank_5 = (rank_5 / float(len(testLabels))) * 100
-
-    print("n_neighbor = {}   acc ={}".format(n_neighbor, rank_1))
-
-
-model = KNeighborsClassifier(n_neighbors=6)
+model = LinearDiscriminantAnalysis()
 model.fit(trainData, trainLabels)
 
+
 # use rank-1 and rank-5 predictions
-# print("[INFO] evaluating model...")
-f = open(cfg.knnresults, "w")
+print("[INFO] evaluating model...")
+f = open(cfg.ldaresults, "w")
 rank_1 = 0
 rank_2 = 0
 rank_5 = 0
@@ -119,7 +82,6 @@ rank_1 = (rank_1 / float(len(testLabels))) * 100
 rank_2 = (rank_2 / float(len(testLabels))) * 100
 rank_5 = (rank_5 / float(len(testLabels))) * 100
 
-print("n_neighbor = {}   acc ={}".format(n_neighbor, rank_1))
 # write the accuracies to file
 f.write("Rank-1: {:.2f}%\n".format(rank_1))
 f.write("Rank-2: {:.2f}%\n".format(rank_2))
@@ -131,6 +93,7 @@ preds = model.predict(testData)
 # write the cl˜assification report to file
 f.write("{}\n".format(classification_report(testLabels, preds)))
 f.close()
+
 # dump classifier to file
 print("[INFO] saving model...")
 pickle.dump(model, open(cfg.classifier_path, "wb"))
@@ -142,6 +105,6 @@ print("[INFO] confusion matrix")
 labels = sorted(list(os.listdir(cfg.train_path)))
 
 # plot the confusion matrix
-# cm = confusion_matrix(testLabels, preds)
-# sns.heatmap(cm, annot=True, cmap="Set2")
-# plt.show()
+cm = confusion_matrix(testLabels, preds)
+sns.heatmap(cm, annot=True, cmap="Set2")
+plt.show()

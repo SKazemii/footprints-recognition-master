@@ -1,7 +1,7 @@
 # filter warnings
 import warnings
 
-warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore")
 
 
 # organize imports

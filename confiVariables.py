@@ -26,9 +26,10 @@ os.chdir(project_path)
 
 features_path = project_path + "/output/" + model_name + "/features.pickle"
 labels_path = project_path + "/output/" + model_name + "/labels.pickle"
-results = project_path + "/output/" + model_name + "/results.txt"
+regresults = project_path + "/output/" + model_name + "/regresults.txt"
 svmresults = project_path + "/output/" + model_name + "/svmresults.txt"
 knnresults = project_path + "/output/" + model_name + "/knnresults.txt"
+ldaresults = project_path + "/output/" + model_name + "/ldaresults.txt"
 
 model_path = project_path + "/output/" + model_name + "/model"
 classifier_path = project_path + "/output/" + model_name + "/classifier.pickle"

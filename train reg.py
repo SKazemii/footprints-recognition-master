@@ -1,7 +1,7 @@
 # filter warnings
 import warnings
 
-warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore")
 
 
 # organize imports
@@ -53,7 +53,7 @@ model.fit(trainData, trainLabels)
 
 # use rank-1 and rank-5 predictions
 print("[INFO] evaluating model...")
-f = open(cfg.results, "w")
+f = open(cfg.regresults, "w")
 rank_1 = 0
 rank_2 = 0
 rank_5 = 0
