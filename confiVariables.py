@@ -11,6 +11,8 @@ include_top = False
 # test_size = 0.1 ~ 0.9
 test_size = 0.10
 seed = 10
+# classifier_name = {svm, lda, knn, reg}
+classifier_name = "lda"
 
 # creating output paths
 project_path = os.getcwd()

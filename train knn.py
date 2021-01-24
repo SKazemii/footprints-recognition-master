@@ -45,7 +45,7 @@ print("[INFO] test data   : {}".format(testData.shape))
 print("[INFO] train labels: {}".format(trainLabels.shape))
 print("[INFO] test labels : {}".format(testLabels.shape))
 
-# use logistic regression as the model
+# use kNN as the model
 print("[INFO] creating model...")
 rank_1_max = 0
 for n_neighbor in range(1, 25):

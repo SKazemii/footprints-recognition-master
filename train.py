@@ -8,8 +8,13 @@ warnings.filterwarnings("ignore")
 
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import confusion_matrix
+
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn import svm
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+
 import numpy as np
 import os
 import pickle

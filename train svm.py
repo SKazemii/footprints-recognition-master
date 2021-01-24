@@ -45,9 +45,8 @@ print("[INFO] test data   : {}".format(testData.shape))
 print("[INFO] train labels: {}".format(trainLabels.shape))
 print("[INFO] test labels : {}".format(testLabels.shape))
 
-# use logistic regression as the model
+# use SVM as the model
 print("[INFO] creating model...")
-
 model = svm.SVC(kernel="rbf", decision_function_shape="ovr", probability=True)
 model.fit(trainData, trainLabels)
 

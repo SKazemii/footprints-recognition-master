@@ -45,7 +45,7 @@ print("[INFO] test data   : {}".format(testData.shape))
 print("[INFO] train labels: {}".format(trainLabels.shape))
 print("[INFO] test labels : {}".format(testLabels.shape))
 
-# use logistic regression as the model
+# use LDA as the model
 print("[INFO] creating model...")
 model = LinearDiscriminantAnalysis()
 model.fit(trainData, trainLabels)
