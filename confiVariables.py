@@ -12,7 +12,26 @@ include_top = False
 test_size = 0.10
 seed = 10
 # classifier_name = {svm, lda, knn, reg}
-classifier_name = "lda"
+classifier_name = "knn"
+
+
+# cross-validation
+# outer_shuffle = {True | False}
+outer_shuffle = True
+# outer_n_splits = {3, 5, 10}
+outer_n_splits = 10
+
+# inner_shuffle = {True | False}
+inner_shuffle = True
+# inner_n_splits = {3, 5, 10}
+inner_n_splits = 5
+
+# GridSearchCV
+# refit = {True | False}
+Grid_refit = True
+# Grid_n_jobs = {3, 5, 10}????????
+Grid_n_jobs = 2
+
 
 # creating output paths
 project_path = os.getcwd()
