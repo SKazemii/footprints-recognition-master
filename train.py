@@ -29,8 +29,10 @@ import matplotlib.pyplot as plt
 import confiVariables as cfg
 
 # deleting the last results
-if os.path.exists(cfg.knnresults):
-    os.remove(cfg.knnresults)
+if os.path.exists(cfg.results):
+    os.remove(cfg.results)
+elif os.path.exists(cfg.classifier_path):
+    os.remove(cfg.classifier_path)
 else:
     print("[INFO] The result file does not exist for deleting")
 
@@ -44,7 +46,7 @@ with open(cfg.labels_path, "rb") as handle:
 
 
 # verify the shape of features and labels
-print("[INFO] features shape: {}".format(features.shape))
+print("[INFO] data shape: {}".format(features.shape))
 print("[INFO] labels shape: {}".format(labels.shape))
 
 print("[INFO] training started...")
@@ -53,7 +55,13 @@ print("[INFO] training started...")
     np.array(features), np.array(labels), test_size=cfg.test_size, random_state=cfg.seed
 )
 
-print("[INFO] splitting the dataset into {} folds".format(cfg.outer_n_splits))
+print("[INFO] splitted data into train and test set data...")
+print("[INFO] test data   : {}".format(testData.shape))
+print("[INFO] test labels : {}".format(testLabels.shape))
+
+print(
+    "[INFO] splitting the training dataset into {} folds\n\n".format(cfg.outer_n_splits)
+)
 cv_outer = StratifiedKFold(
     n_splits=cfg.outer_n_splits, shuffle=cfg.outer_shuffle, random_state=cfg.seed
 )
@@ -65,16 +73,15 @@ outer_results_rank_5 = list()
 cv = 1
 for train_ix, test_ix in cv_outer.split(trainData, trainLabels):
 
-    print("[DeBug] *****  : {}".format(train_ix.shape))
     # split data
     trainingData, evaluationData = trainData[train_ix, :], trainData[test_ix, :]
     trainingLabels, evaluationLabels = trainLabels[train_ix], trainLabels[test_ix]
 
-    print("[INFO] splitted train data into Kfold...")
-    print("[INFO] training data  : {}".format(trainingData.shape))
-    print("[INFO] evaluation data   : {}".format(evaluationData.shape))
-    print("[INFO] training labels: {}".format(trainingLabels.shape))
-    print("[INFO] evaluation labels : {}".format(evaluationLabels.shape))
+    print("[INFO] training data shape : {}".format(trainingData.shape))
+    print("[INFO] training labels shape : {}\n\n".format(trainingLabels.shape))
+
+    print("[INFO] evaluation data shape : {}".format(evaluationData.shape))
+    print("[INFO] evaluation labels shape : {}\n\n".format(evaluationLabels.shape))
 
     # configure the inner cross-validation procedure
     cv_inner = StratifiedKFold(
@@ -87,13 +94,7 @@ for train_ix, test_ix in cv_outer.split(trainData, trainLabels):
         model = KNeighborsClassifier()
 
         # define search space
-        space = {
-            "n_neighbors": np.arange(1, 10, 2),
-            "metric": ["euclidean", "cityblock"],
-            #"leaf_size": np.arange(1, 30, 2),
-            #"p": [1, 2],
-            "weights": ["distance", "uniform"],
-        }
+        space = cfg.knnspace
 
         # define search
         search = GridSearchCV(
@@ -107,21 +108,29 @@ for train_ix, test_ix in cv_outer.split(trainData, trainLabels):
         # execute search
         result = search.fit(trainingData, trainingLabels)
 
-        # model.fit(trainData, trainLabels)
-
         best_model = result.best_estimator_
-
-        print("[INFO] evaluating model...")
-        f = open(cfg.knnresults, "a")
 
     elif cfg.classifier_name == "svm":
         # use SVM as the model
         print("[INFO] creating model...")
-        model = svm.SVC(kernel="rbf", decision_function_shape="ovr", probability=True)
-        model.fit(trainData, trainLabels)
+        model = svm.SVC()
 
-        print("[INFO] evaluating model...")
-        f = open(cfg.svmresults, "a")
+        # define search space
+        space = cfg.svmspace
+
+        # define search
+        search = GridSearchCV(
+            model,
+            space,
+            scoring="accuracy",
+            n_jobs=cfg.Grid_n_jobs,
+            cv=cv_inner,
+            refit=cfg.Grid_refit,
+        )
+        # execute search
+        result = search.fit(trainingData, trainingLabels)
+
+        best_model = result.best_estimator_
 
     elif cfg.classifier_name == "lda":
         # use LDA as the model
@@ -129,34 +138,63 @@ for train_ix, test_ix in cv_outer.split(trainData, trainLabels):
         model = LinearDiscriminantAnalysis()
 
         # define search space
-        space = dict()
-        space["solver"] = ["svd", "lsqr"]
+        space = cfg.ldaspace
 
         # define search
         search = GridSearchCV(
-            model, space, scoring="accuracy", n_jobs=-1, cv=cv_inner, refit=True
+            model,
+            space,
+            scoring="accuracy",
+            n_jobs=cfg.Grid_n_jobs,
+            cv=cv_inner,
+            refit=cfg.Grid_refit,
         )
         # execute search
         result = search.fit(trainingData, trainingLabels)
 
-        # model.fit(trainData, trainLabels)
-
         best_model = result.best_estimator_
-
-        print("[INFO] evaluating model...")
-        f = open(cfg.ldaresults, "a")
 
     elif cfg.classifier_name == "reg":
         # use logistic regression as the model
         print("[INFO] creating model...")
-        model = LogisticRegression(random_state=cfg.seed)
-        model.fit(trainData, trainLabels)
+        model = LogisticRegression()
 
-        print("[INFO] evaluating model...")
-        f = open(cfg.regresults, "a")
+        # define search space
+        space = cfg.regspace
+
+        # define search
+        search = GridSearchCV(
+            model,
+            space,
+            scoring="accuracy",
+            n_jobs=cfg.Grid_n_jobs,
+            cv=cv_inner,
+            refit=cfg.Grid_refit,
+        )
+        # execute search
+        result = search.fit(trainingData, trainingLabels)
+
+        best_model = result.best_estimator_
 
     else:
         print("[ERROR] could not find the classifier")
+
+    print("[INFO] evaluating model...")
+    if cv == 1:
+        f = open(cfg.results, "a")
+
+        f.write("##################################################\n")
+        f.write("################## the settings ##################\n")
+        f.write("##################################################\n\n")
+        f.write("Grid_n_jobs:           {}\n".format(cfg.Grid_n_jobs))
+        f.write("space:                 {}\n".format(space))
+        f.write("inner_n_splits:        {}\n".format(cfg.inner_n_splits))
+        f.write("outer_n_splits:        {}\n".format(cfg.outer_n_splits))
+        f.write("features.shape:        {}\n".format(features.shape))
+        f.write("trainingData.shape:    {}\n".format(trainingData.shape))
+        f.write("evaluationData.shape:  {}\n".format(evaluationData.shape))
+        f.write("testData.shape:        {}\n".format(testData.shape))
+        f.write("test size:             {}\n\n\n".format(cfg.test_size))
 
     rank_1 = 0
     rank_2 = 0
@@ -204,20 +242,6 @@ for train_ix, test_ix in cv_outer.split(trainData, trainLabels):
 # dump classifier to file
 #    print("[INFO] saving best_model...")
 #    pickle.dump(best_model, open(cfg.classifier_path, "wb"))
-
-
-print(
-    "Accuracy Rank-1: %.3f (%.3f)"
-    % (np.mean(outer_results_rank_1), np.std(outer_results_rank_1))
-)
-print(
-    "Accuracy Rank-2: %.3f (%.3f)"
-    % (np.mean(outer_results_rank_2), np.std(outer_results_rank_2))
-)
-print(
-    "Accuracy Rank-5: %.3f (%.3f)"
-    % (np.mean(outer_results_rank_5), np.std(outer_results_rank_5))
-)
 
 
 # write the accuracies of training set to file
@@ -280,6 +304,9 @@ f.write("Rank-1: {:.2f}%\n".format(rank_1))
 f.write("Rank-2: {:.2f}%\n".format(rank_2))
 f.write("Rank-5: {:.2f}%\n\n".format(rank_5))
 
+f.write("best parameters are:\n {}\n\n".format(result.best_params_))
+
+
 # evaluate the model of test data
 preds = best_model.predict(testData)
 
@@ -287,13 +314,64 @@ preds = best_model.predict(testData)
 f.write("{}\n".format(classification_report(testLabels, preds)))
 f.close()
 
+
+# showing best results along with the best parameters
+print("[INFO] Grid search best parameters: {}".format(result.best_params_))
+print("-------------------------------------------------------------------\n\n")
+print("[INFO] Accuracy Rank-1: {:.3f}%".format(rank_1))
+print("[INFO] Accuracy Rank-2: {:.3f}%".format(rank_2))
+print("[INFO] Accuracy Rank-5: {:.3f}%".format(rank_5))
+
+# dump classifier to file
+print("[INFO] saving best_model...")
+pickle.dump(best_model, open(cfg.classifier_path, "wb"))
+
+os.chdir(cfg.project_path + "/output/" + cfg.model_name)
+if os.path.exists(cfg.project_path + "/output/" + cfg.model_name + "/classifiers/"):
+    print("[INFO] The classifiers folder exists")
+else:
+    os.system("mkdir " + "classifiers")
+
+
+os.system(
+    "mv -f "
+    + cfg.classifier_path
+    + " "
+    + cfg.project_path
+    + "/output/"
+    + cfg.model_name
+    + "/classifiers/"
+    + cfg.datefile
+    + ".pickle"
+)
+
+
+os.chdir(cfg.project_path + "/output/" + cfg.model_name)
+if os.path.exists(cfg.project_path + "/output/" + cfg.model_name + "/history/"):
+    print("[INFO] The history folder exists")
+else:
+    os.system("mkdir " + "history")
+
+
+os.system(
+    "mv -f "
+    + cfg.results
+    + " "
+    + cfg.project_path
+    + "/output/"
+    + cfg.model_name
+    + "/history/"
+    + cfg.datefile
+    + ".txt"
+)
+
 # display the confusion matrix
 # print("[INFO] confusion matrix")
 
-# get the list of training lables
+# # get the list of training lables
 # labels = sorted(list(os.listdir(cfg.train_path)))
 
-# plot the confusion matrix
+# # plot the confusion matrix
 # cm = confusion_matrix(testLabels, preds)
 # sns.heatmap(cm, annot=True, cmap="Set2")
 # plt.show()
